@@ -93,4 +93,27 @@ object Wallet {
     fun getBalance(): Long {
         return lib.get_balance(walletPtr)
     }
+
+    fun createTransaction(
+        fee_rate: Float,
+        addressees: List<Pair<String, String>>,
+        send_all: Boolean? = false,
+        utxos: List<String>? = null,
+        unspendable: List<String>? = null,
+        policy: Map<String, List<String>>? = null,
+    ): CreateTxResponse {
+        return lib.create_tx(walletPtr, fee_rate, addressees, send_all, utxos, unspendable, policy)
+    }
+
+    fun sign(psbt: String, assume_height: Int? = null): SignResponse {
+        return lib.sign(walletPtr, psbt, assume_height)
+    }
+
+    fun extractPsbt(psbt: String): RawTransaction {
+        return lib.extract_psbt(walletPtr, psbt)
+    }
+
+    fun broadcast(raw_tx: String): Txid {
+        return lib.broadcast(walletPtr, raw_tx)
+    }
 }
