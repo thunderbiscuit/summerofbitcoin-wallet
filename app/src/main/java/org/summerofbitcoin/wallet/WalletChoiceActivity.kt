@@ -8,7 +8,9 @@ package org.summerofbitcoin.wallet
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import org.summerofbitcoin.wallet.data.Wallet
 import org.summerofbitcoin.wallet.databinding.ActivityWalletChoiceBinding
+import org.summerofbitcoin.wallet.wallet.WalletActivity
 
 class WalletChoiceActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,6 +20,7 @@ class WalletChoiceActivity : AppCompatActivity() {
         setSupportActionBar(findViewById(R.id.toolbar))
 
         binding.newWalletButton.setOnClickListener {
+            Wallet.createWallet()
             val intent: Intent = Intent(this, WalletActivity::class.java)
             startActivity(intent)
             finish()

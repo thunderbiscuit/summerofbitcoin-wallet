@@ -8,7 +8,7 @@
 
     <fragment
         android:id="@+id/walletFragment"
-        android:name="org.summerofbitcoin.wallet.WalletFragment"
+        android:name="org.summerofbitcoin.wallet.wallet.WalletFragment"
         android:label="WalletFragment"
         tools:layout="@layout/fragment_wallet" >
         <action
@@ -40,7 +40,7 @@
 
     <fragment
         android:id="@+id/transactionsFragment"
-        android:name="org.summerofbitcoin.wallet.TransactionsFragment"
+        android:name="org.summerofbitcoin.wallet.wallet.TransactionsFragment"
         android:label="TransactionsFragment"
         tools:layout="@layout/fragment_transactions" >
         <action
@@ -52,7 +52,7 @@
 
     <fragment
         android:id="@+id/sendFragment"
-        android:name="org.summerofbitcoin.wallet.SendFragment"
+        android:name="org.summerofbitcoin.wallet.wallet.SendFragment"
         android:label="SendFragment"
         tools:layout="@layout/fragment_send">
         <action
@@ -64,7 +64,7 @@
 
     <fragment
         android:id="@+id/settingsFragment"
-        android:name="org.summerofbitcoin.wallet.RecoveryPhraseFragment"
+        android:name="org.summerofbitcoin.wallet.wallet.RecoveryPhraseFragment"
         android:label="SettingsFragment"
         tools:layout="@layout/fragment_recovery_phrase">
         <action
@@ -76,7 +76,7 @@
 
     <fragment
         android:id="@+id/receiveFragment"
-        android:name="org.summerofbitcoin.wallet.ReceiveFragment"
+        android:name="org.summerofbitcoin.wallet.wallet.ReceiveFragment"
         android:label="ReceiveFragment"
         tools:layout="@layout/fragment_receive">
         <action
@@ -87,7 +87,7 @@
     </fragment>
     <fragment
         android:id="@+id/aboutFragment"
-        android:name="org.summerofbitcoin.wallet.AboutFragment"
+        android:name="org.summerofbitcoin.wallet.wallet.AboutFragment"
         android:label="AboutFragment"
         tools:layout="@layout/fragment_about" >
         <action

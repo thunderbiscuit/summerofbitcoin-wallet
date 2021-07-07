@@ -3,7 +3,7 @@
  * Use of this source code is governed by the Apache 2.0 license that can be found in the ./LICENSE file.
  */
 
-package org.summerofbitcoin.wallet
+package org.summerofbitcoin.wallet.wallet
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.navigation.Navigation
+import org.summerofbitcoin.wallet.R
 
 class WalletActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,7 +37,7 @@ class WalletActivity : AppCompatActivity() {
                 return true
             }
             else -> {
-                Log.i("WalletActivity", "Overflow menu choice didn't match available options")
+                Log.i("SobiWallet", "Overflow menu choice didn't match available options")
                 return true
             }
         }

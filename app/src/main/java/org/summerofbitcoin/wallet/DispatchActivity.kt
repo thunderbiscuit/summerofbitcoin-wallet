@@ -8,22 +8,25 @@ package org.summerofbitcoin.wallet
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import org.summerofbitcoin.wallet.data.Repository
+import org.summerofbitcoin.wallet.data.Wallet
+import org.summerofbitcoin.wallet.wallet.WalletActivity
 
 class DispatchActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // not implemented yet
-        // launch into wallet activity if user already has a Summer of Bitcoin Wallet on device
-        // if (currentWalletExists) {
-        //     startActivity(Intent(this, WalletActivity::class.java))
-        //     finish()
-        // } else {
-        //     startActivity(Intent(this, IntroActivity::class.java))
-        //     finish()
-        // }
+        // ask Repository if a wallet already exists
+        val walletInitialized: Boolean = Repository.doesWalletExist()
 
-        startActivity(Intent(this, WalletChoiceActivity::class.java))
-        finish()
+        // launch into wallet activity if user already has a Summer of Bitcoin Wallet saved on device
+        if (walletInitialized) {
+            Wallet.loadExistingWallet()
+            startActivity(Intent(this, WalletActivity::class.java))
+            finish()
+        } else {
+            startActivity(Intent(this, WalletChoiceActivity::class.java))
+            finish()
+        }
     }
 }
