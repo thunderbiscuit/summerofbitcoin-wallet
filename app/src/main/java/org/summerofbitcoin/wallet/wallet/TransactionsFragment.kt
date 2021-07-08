@@ -5,17 +5,20 @@
 
 package org.summerofbitcoin.wallet.wallet
 
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
 import org.bitcoindevkit.bdkjni.Types.TransactionDetails
 import org.summerofbitcoin.wallet.R
 import org.summerofbitcoin.wallet.data.Wallet
 import org.summerofbitcoin.wallet.databinding.FragmentTransactionsBinding
+import org.summerofbitcoin.wallet.utilities.timestampToString
 
 class TransactionsFragment : Fragment() {
 
@@ -47,7 +50,7 @@ class TransactionsFragment : Fragment() {
         for (item in rawList) {
             Log.i("SobiWallet", "Transaction list item: $item")
             val transactionInfo: String =
-                "Timestamp: ${item.timestamp}\nReceived: ${item.received}\nSent: ${item.sent}\nFees: ${item.fees}\nTxid: ${item.txid}"
+                "Timestamp: ${timestampToString(item.timestamp)}\nReceived: ${item.received}\nSent: ${item.sent}\nFees: ${item.fees}\nTxid: ${item.txid}"
 
             finalList = "$finalList\n$transactionInfo\n"
         }
