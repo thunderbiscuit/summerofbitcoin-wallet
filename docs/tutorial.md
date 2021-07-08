@@ -163,6 +163,166 @@ Note that resources are accessed using the following syntax: `@resourcetype/reso
 ```
 
 # [Task 4](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.4.0): Build the target UI
+The UI we'll be building is simple with a clean color palette. The wireframes that were used to develop the original idea were made using a tool called [Figma](https://www.figma.com/) and look like this:
 
+<center>
+  <img src="./images/screenshots/nord-theme.png" width="400px" />
+</center>
 
+The color palette is from a theme called [Nord](https://www.nordtheme.com/).
 
+Most of the work in developing the UI happens in the `res/layouts/` directory. Buttons and textviews are xml tags and are given properties that define how they look as well as their location on the screen. Most fragments use a `ConstrainLayout` tag as their parent tag, which allows for views inside it to describe how to space themselves on different screen sizes.
+
+When learning about how to build UIs in Android Studio, make sure you try the different options for view panes (code, split, and design). Some tasks are better suited to certain workflows.
+
+## Colors
+Our colors are defined in the `res/values/colors.xml` file, and become accessible throughout the app using calls like `android:background="@color/night_1"`
+
+## Strings
+You'll note that while you can write string directly inside views in your layouts, your IDE will recommend you pull them out in string resources. Doing this feels odd at first, but scales much better. The same string is then defined only once and can be used in multiple places (only one place to change it if it needs change). This approach also offers the opportunity to add translations in different directories, and allows your app to pull the right resource given the user's locale and/or preferred language.
+
+## Image assets
+The testnet bitcoin logo (an svg file) is added to the `res/drawable/` directory. This directory is where you'll find most images, logos, and background shapes that are used in other views.
+
+## Styles
+It is often useful to define certain properties that can be applied broadly to many views. Android has a theming system that allows you to define new themes or extend the default one provided by Android. The app uses a bit of both. Take a look at the `res/values/themes.xml` file. Note that activities can be given a theme in the `AndroidManifest.xml` file; this is how we build the splash screen for the app (by providing a theme which has a single background image to the `DispatchActivity` activity).
+
+<center>
+  <img src="./images/screenshots/ui-screenshots.png" width="600px" />
+</center>
+
+# [Task 5](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.5.0): Add Wallet and Repository objects
+This is where things get interesting on the bitcoin side of things. This task introduces 2 new objects: the `Wallet` object and the `Repository` object.
+
+Both are initialized on startup by the `SobiWalletApplication` class, with some properties they need to function (wallet path and shared preferences respectively).
+
+## Wallet object
+The `Wallet` class is our window to the bitcoindevkit. It's the only class that interacts with the bitcoindevkit direclty and you'll find in there most of the API. Methods like `createWallet()`, `loadExistingWallet()`, and `recoverWallet()` allow you to generate/recover wallets on startup, and methods like `sync()`, `getNewAddress()`, and `getBalance()` provide the necessary interactions one would expect from a bitcoin library.
+
+Note that because the bitcoindevkit is a native library (it is not written in Kotlin/Java and is provided as binaries to the OS), the library get "loaded" on initialization through the `init` block:
+```kotlin
+object Wallet {
+    private val lib: Lib
+    
+    init {
+        // load bitcoindevkit native library
+        Lib.load()
+        lib = Lib()
+    }
+    // ...
+}
+```
+The library is then accessible throughout the class, and most methods use it like so:
+```kotlin
+fun getNewAddress(): String {
+    return lib.get_new_address(walletPtr)
+}
+
+fun getBalance(): Long {
+    return lib.get_balance(walletPtr)
+}
+```
+
+The library comes with a few types (`ExtendedKey`, `CreateTxResponse`, `SignResponse`, etc.) which can be investigated by looking at the source code [here](https://github.com/bitcoindevkit/bdk-jni/tree/master/library/src/main/java/org/bitcoindevkit/bdkjni).
+
+## Repository object
+The _Repository_ design pattern is very common in Android applications. The idea is to create a layer of separation between the UI (activities, fragments) and the data they need to function. A `Repository` class is often used as the bridge between the two. For example, a fragment might need to query a list of friends the user has, and that list might be available from different locations (say a ping to a microservice, or a lookup in a local cache). It's important to pull that sort of decision/code away from UI fragments. This is typically the sort of thing that the Repository will do; make decisions as to where and how to get data for the UI fragments that request it. 
+
+For us this shows up when the `DispatchActivity` tries to decide if the user already has a wallet initialized upon launch. In this case the activity simply asks the `Repository` the question
+```kotlin
+Repository.doesWalletExist()
+```
+and doesn't care how the Repository knows (in this example the repository uses a boolean value stored in [shared preferences](https://developer.android.com/training/data-storage/shared-preferences)). Shared preferences are a way to store small amounts of data quickly without requiring a database. Common use cases are small strings and booleans (like choice of color theme, whether something has been completed, etc.).
+
+## Using the bitcoindevkit
+We can see the library in action through the logs, for example when creating a new wallet, or when pressing the new `generateNewAddressButton` on the receive fragment:
+```kotlin
+binding.generateNewAddressButton.setOnClickListener {
+    Log.i("SobiWallet", "${Wallet.getNewAddress()}")
+}
+```
+
+# [Task 6](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.6.0): Implement receive and sync
+It's now time to connect the `Wallet` object to the user interface. Note how the `generateNewAddressButton` has on `onClickListener` that triggers the `displayNewAddress()` method:
+```kotlin
+// ReceiveFragment.kt
+
+override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
+
+    val navController = Navigation.findNavController(view)
+    binding.receiveToWalletButton.setOnClickListener {
+        navController.navigate(R.id.action_receiveFragment_to_walletFragment)
+    }
+    binding.generateNewAddressButton.setOnClickListener {
+        displayNewAddress()
+    }
+}
+
+private fun displayNewAddress() {
+    val newGeneratedAddress: String = Wallet.getNewAddress()
+    Log.i("SobiWallet", "New deposit address is $newGeneratedAddress")
+
+    val qrgEncoder: QRGEncoder = QRGEncoder(newGeneratedAddress, null, QRGContents.Type.TEXT, 1000)
+    qrgEncoder.colorBlack = ContextCompat.getColor(requireContext(), R.color.night_1)
+    qrgEncoder.colorWhite = ContextCompat.getColor(requireContext(), R.color.snow_1)
+    try {
+        val bitmap = qrgEncoder.bitmap
+        binding.qrCode.setImageBitmap(bitmap)
+    } catch (e: Throwable) {
+        Log.i("SobiWallet", "Error with QRCode generator, ${e.toString()}")
+    }
+    binding.receiveAddress.text = newGeneratedAddress
+}
+```
+The `displayNewAddress()` method calls `Wallet.getNewAddress()` and uses the bindings on the `qrCode` (an image) and `receiveAddress` (text) views to populate the screen with the proper address.
+
+## QR codes
+QR codes are generated using a library called zxing (you'll find the new dependency in the `/app/build.gradle.kts` file).
+
+## Sync
+The sync functionality is very simple (a simple `Wallet.sync()` will do). But note that we wish to update the UI to reflect the current balance upon sync. This is done using something called the viewmodel, a very common pattern in Android applications. ViewModels are a way to implement the [observer pattern](https://www.youtube.com/watch?v=_BpmfnqjgzQ).
+
+Take a look at the `WalletViewModel` class:
+```kotlin
+class WalletViewModel(application: Application) : AndroidViewModel(application) {
+
+    public var balance: MutableLiveData<Long> = MutableLiveData(0)
+
+    public fun updateBalance() {
+        Wallet.sync(100)
+        val newBalance = Wallet.getBalance()
+        Log.i("SobiWallet", "New balance is $newBalance")
+        balance.postValue(newBalance)
+    }
+}
+```
+
+Fragment and activities can simply "observe" (subscribe to) particular variables in our ViewModel, and the ViewModel will update them as this value changes. Notice the `balance.postValue(newBalance)` call (this triggers all observers to pull the new data).
+
+The code from the fragment looks like this:
+```kotlin
+viewModel.balance.observe(viewLifecycleOwner, {
+    val balanceInBitcoin: Float
+    if (it == 0L) {
+        balanceInBitcoin = 0F
+    } else {
+        balanceInBitcoin = it.toFloat().div(100_000_000)
+    }
+    val humanReadableBalance = DecimalFormat("0.00000000").format(balanceInBitcoin)
+    binding.balance.text = humanReadableBalance
+})
+```
+This ensures that the balance displayed in the `balance` view is always up to date with the balance in the `WalletViewModel`. Easy Peasy Bitcoineesy.
+
+<center>
+  <img src="./images/screenshots/task-6.gif" width="300px" />
+</center>
+
+# [Task 7](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.7.0): Implement send
+
+# [Task 8](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.8.0): Add transaction history
+
+# [Task 9](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.9.0): Display recovery phrase
+
+# [Task 10](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.10.0): Enable wallet recovery
