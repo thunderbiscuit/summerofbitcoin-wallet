@@ -166,7 +166,7 @@ Note that resources are accessed using the following syntax: `@resourcetype/reso
 The UI we'll be building is simple with a clean color palette. The wireframes that were used to develop the original idea were made using a tool called [Figma](https://www.figma.com/) and look like this:
 
 <center>
-  <img src="./images/screenshots/nord-theme.png" width="400px" />
+  <img class="screenshot" src="./images/screenshots/nord-theme.png" width="400px" />
 </center>
 
 The color palette is from a theme called [Nord](https://www.nordtheme.com/).
@@ -188,7 +188,7 @@ The testnet bitcoin logo (an svg file) is added to the `res/drawable/` directory
 It is often useful to define certain properties that can be applied broadly to many views. Android has a theming system that allows you to define new themes or extend the default one provided by Android. The app uses a bit of both. Take a look at the `res/values/themes.xml` file. Note that activities can be given a theme in the `AndroidManifest.xml` file; this is how we build the splash screen for the app (by providing a theme which has a single background image to the `DispatchActivity` activity).
 
 <center>
-  <img src="./images/screenshots/ui-screenshots.png" width="600px" />
+  <img class="screenshot" src="./images/screenshots/ui-screenshots.png" width="600px" />
 </center>
 
 # [Task 5](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.5.0): Add Wallet and Repository objects
@@ -316,13 +316,233 @@ viewModel.balance.observe(viewLifecycleOwner, {
 This ensures that the balance displayed in the `balance` view is always up to date with the balance in the `WalletViewModel`. Easy Peasy Bitcoineesy.
 
 <center>
-  <img src="./images/screenshots/task-6.gif" width="300px" />
+  <img class="screenshot" src="./images/screenshots/task-6.gif" width="300px" />
 </center>
 
 # [Task 7](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.7.0): Implement send
+Sending bitcoin is a slightly more involved operation.
+
+The bitcoindevkit workflow for this operation is as follows:
+1. Create a transaction with proper data (amount, fee rate, adressees)
+2. Sign the transaction
+3. Extract the raw transaction
+4. Broadcast it
+
+Note that all 4 of those steps are accomplished by the `broadcastTransaction()` method of the `SendFragment`:
+```kotlin
+private fun broadcastTransaction() {
+    try {
+        // build required transaction information from text inputs
+        val feeRate = 1F
+        val sendToAddress: String = binding.sendToAddress.text.toString().trim()
+        val sendAmount: String = binding.sendAmount.text.toString().trim()
+        val addressAndAmount: List<Pair<String, String>> = listOf(Pair(sendToAddress, sendAmount))
+
+        val transactionDetails: CreateTxResponse = Wallet.createTransaction(feeRate, addressAndAmount, false, null, null, null)
+        val signResponse: SignResponse = Wallet.sign(transactionDetails.psbt)
+
+        val rawTx: RawTransaction = Wallet.extractPsbt(signResponse.psbt)
+        val txid: Txid = Wallet.broadcast(rawTx.transaction)
+
+        Log.i("SobiWallet", "Transaction was broadcast! txid: $txid")
+        showSnackbar(
+            requireView(),
+            SnackbarLevel.SUCCESS,
+            "Transaction was broadcast successfully!"
+        )
+    } catch (e: Throwable) {
+        Log.i("SobiWallet", "Broadcast error: ${e.message}")
+        showSnackbar(
+            requireView(),
+            SnackbarLevel.ERROR,
+            "Broadcast error: ${e.message}"
+        )
+    }
+}
+```
+
+The other parts of this fragment are the `MaterialAlertDialog` (which we use as a confirmation step before broadcasting the transaction):
+```kotlin
+val broadcastTransactionDialog =
+    MaterialAlertDialogBuilder(this@SendFragment.requireContext(), R.style.NordDialogTheme)
+        .setTitle("Confirm transaction")
+        .setMessage(buildConfirmTransactionMessage())
+        .setPositiveButton("Broadcast") { _, _ ->
+            Log.i("SobiWallet", "User is attempting to broadcast transaction")
+            broadcastTransaction()
+            navController.navigate(R.id.action_sendFragment_to_walletFragment)
+        }
+        .setNegativeButton("Go back") { _, _ ->
+            Log.i("SobiWallet", "User is not broadcasting")
+        }
+broadcastTransactionDialog.show()
+```
+
+And the use of snackbars to let the user know whether the transaction has successfully been broadcast of if an error was thrown while attempting to broadcast it.
+```kotlin
+showSnackbar(
+    requireView(),
+    SnackbarLevel.ERROR,
+    "Broadcast error: ${e.message}"
+)
+```
+Take a look at `utilities/Snackbars.kt` to get a sense for how they work.
+
+<center>
+  <img class="screenshot" src="./images/screenshots/task-7.gif" width="300px" />
+</center>
 
 # [Task 8](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.8.0): Add transaction history
+Adding a list of transactions is a daunting task if one is to take it to a polished result. It involves using a database and keeping track on transactions, their state, and performing calculations on the raw material that the bitcoindevkit provides. This is slightly outside of the scope of this workshop. Simply displaying the list of transactions as one long string (with some small modifications), however, is quite easy, and this is what this wallet implements.
+
+Note that the `transactionsView` is simply a `NestedScrollView` that displays a string built by the `transactionsList()` method. Creating the `confirmationTime` string variable is the most involved part of this whole endeavor, and is done using a neat Kotlin feature called _extension functions_, where we define a method on the bitcoindevkit type `ConfirmationTime` which returns a nicely formatted timestamp. Take a look at the `utilities/Timestamps.kt` file for more on this function. Building the string is otherwise a rather simple affair; the bitcoindevkit returns a list of `TransactionDetails` through the `listTransactions()` method, and we parse them one by one and pull the interesting things into a string template.
+
+```kotlin
+override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
+
+    binding.transactionsView.text = transactionList()
+
+    val navController = Navigation.findNavController(view)
+    binding.transactionsToWalletButton.setOnClickListener {
+        navController.navigate(R.id.action_transactionsFragment_to_walletFragment)
+    }
+}
+
+private fun transactionList(): String {
+    val rawList: List<TransactionDetails> = Wallet.listTransactions()
+    var finalList: String = ""
+    for (item in rawList) {
+        Log.i("SobiWallet", "Transaction list item: $item")
+        val confirmationTime: String = item.confirmation_time?.timestampToString() ?: "Pending"
+        val transactionInfo: String =
+            "Timestamp: ${confirmationTime}\nReceived: ${item.received}\nSent: ${item.sent}\nFees: ${item.fee}\nTxid: ${item.txid}"
+
+        finalList = "$finalList\n$transactionInfo\n"
+    }
+    return finalList
+}
+```
+
+<center>
+  <img class="screenshot" src="./images/screenshots/transaction-history.png" width="300px" />
+</center>
 
 # [Task 9](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.9.0): Display recovery phrase
+Displaying the recovery phrase to the user is not a complicated task. Remember that we have stored the recovery phrase in shared preferences when creating the wallet
+```kotlin
+fun createWallet(): Unit {
+    val keys: ExtendedKey = generateExtendedKey()
+    val descriptor: String = createDescriptor(keys)
+    val changeDescriptor: String = createChangeDescriptor(keys)
+    initialize(
+        descriptor = descriptor,
+        changeDescriptor = changeDescriptor,
+    )
+    Repository.saveWallet(path, descriptor, changeDescriptor)
+    Repository.saveMnemonic(keys.mnemonic)
+}
+```
+Retreiving the recovery phrase is a simple call to the repository, which has a `getMnemonic()` method defined:
+```kotlin
+fun getMnemonic(): String {
+    return sharedPreferences.getString("mnemonic", "No seed phrase saved") ?: "Seed phrase not there"
+}
+```
+
+Upon creating the fragment, the `getMnemonic()` method is simply called to populate the recoveryPhrase text view:
+```kotlin
+// RecoveryPhraseFragment.kt
+override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
+
+    binding.recoveryPhrase.text = Repository.getMnemonic()
+}
+```
+
+<center>
+  <img class="screenshot" src="./images/screenshots/recovery-phrase.png" width="300px" />
+</center>
 
 # [Task 10](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.10.0): Enable wallet recovery
+Enabling wallet recovery is not complicated from the bitcoindevkit point of view, but does require a bit of work on the Android side of things. Note for example that so far, the `WalletChoiceActivity` does not contain any fragments. But here we'll need to add a screen for entering the 12 word recovery phrase, and so the first thing we need to do is create a `NavHostFragment` in the `WalletChoiceActivity`, complete with 2 fragments: our original screen and a wallet recovery screen. We also need to build a `nav_wallet_choice.xml` file, for navigating between the first and second fragments.
+
+You'll note that the `fragment_recover.xml` layout file is a `ConstraintLayout` with a `NestedScrollView`, itself containing a `LinearLayout` which is the parent for all 12 `EditText` views where the user can input their mnemonic words. This allows for the list of words to be scrollable and ensures it shows well on all screen sizes.
+
+The `RecoverWalletFragment` is one of our longest Kotlin file, but it really comes down to two methods used in the listener for the `recoverWalletButton`, namely `checkWords()` and `buildRecoveryPhrase()`:
+```kotlin
+// RecoverWalletFragment.kt
+binding.recoverWalletButton.setOnClickListener {
+    if (checkWords()) {
+        val recoveryPhraseString = buildRecoveryPhrase()
+        Wallet.recoverWallet(recoveryPhraseString)
+
+        // launch home activity
+        val intent: Intent = Intent(this@RecoverWalletFragment.context, WalletActivity::class.java)
+        startActivity(intent)
+    } else {
+        Log.i("SobiWallet", "Recovery phrase was invalid")
+    }
+}
+```
+
+The `checkWords` method verifies whether the words provided are (a) not empty, and (b) part of the list of 2048 words defined in the English version of the BIP39 wordlist. It uses error snackbars to let the user know if any of the word inputs has any problems:
+```kotlin
+private fun checkWords(): Boolean {
+    val mnemonicWordsTextViews: List<Int> = listOfNotNull<Int>(
+        R.id.word1, R.id.word2, R.id.word3, R.id.word4, R.id.word5, R.id.word6,
+        R.id.word7, R.id.word8, R.id.word9, R.id.word10, R.id.word11, R.id.word12,
+    )
+
+    for (word in 0..11) {
+        val mnemonicWord: String = requireView().findViewById<TextView>(mnemonicWordsTextViews[word]).text.toString()
+            .trim().lowercase(Locale.getDefault())
+        Log.i("SobiWallet", "Verifying word $word: $mnemonicWord")
+
+        when {
+            mnemonicWord.isEmpty() -> {
+                Log.i("SobiWallet", "Word #$word is empty!")
+                showSnackbar(
+                    requireView(),
+                    SnackbarLevel.ERROR,
+                    "Word #${word + 1} is empty!"
+                )
+                return false
+            }
+            mnemonicWord !in this.wordList -> {
+                Log.i("SobiWallet", "Word #$word, $mnemonicWord, is not valid!")
+                showSnackbar(
+                    requireView(),
+                    SnackbarLevel.ERROR,
+                    "Word #${word + 1} is invalid!"
+                )
+                return false
+            }
+            else -> {
+                Log.i("SobiWallet", "Word #$word, $mnemonicWord, is valid")
+            }
+        }
+    }
+    return true
+}
+```
+
+The `buildRecoveryPhrase()` simply brings all the text inputs into one string, and returns it so it can be used by the `Wallet` class for the recovery:
+```kotlin
+// Wallet.kt
+fun recoverWallet(mnemonic: String) {
+    val keys: ExtendedKey = restoreExtendedKeyFromMnemonic(mnemonic)
+    val descriptor: String = createDescriptor(keys)
+    val changeDescriptor: String = createChangeDescriptor(keys)
+    initialize(
+        descriptor = descriptor,
+        changeDescriptor = changeDescriptor,
+    )
+    Repository.saveWallet(path, descriptor, changeDescriptor)
+    Repository.saveMnemonic(keys.mnemonic)
+}
+```
+
+<center>
+  <img class="screenshot" src="./images/screenshots/recover.png" width="300px" />
+</center>
