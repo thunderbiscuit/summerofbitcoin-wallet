@@ -31,9 +31,24 @@ permalink: /
 
 The _Summer of Bitcoin Wallet_ is a simple testnet Bitcoin wallet built as a reference app for how to leverage the [bitcoindevkit](https://github.com/bitcoindevkit) into Android applications. It is purposely lean on Android-specific bells and whistles in order to keep the focus on bitcoin fundamentals and the bitcoindevkit API.
 
-This webpage is a walkthrough tutorial of the [wallet codebase](https://github.com/thunderbiscuit/summerofbitcoin-wallet). It breaks the building of the wallet into 10 distinct tasks, each with an associated tag in the codebase. You can see and run the final version of the wallet after each task by checking out a specific tag like so:
+This webpage is a walkthrough tutorial of the [wallet codebase](https://github.com/thunderbiscuit/summerofbitcoin-wallet). It breaks the building of the wallet into 10 distinct tasks, each with an associated tag in the codebase. See the list of tags and tasks like so:
+```sh
+➜ git tag -n --list
+task1           create a basic android activity
+task2           build multiple activities and navigate between them
+task3           add fragments to the wallet activity
+task4           build the target ui
+task5           add wallet and repository objects
+task6           implement receive and sync
+task7           implement send
+task8           add transaction history
+task9           display recovery phrase
+task10          recover wallet
+```
+
+You can see and run the version of the wallet resulting after each task by checking out a specific tag like so:
 ```shell
-git checkout v0.1.0
+➜ git checkout task1
 ```
 
 We break the journey of building the wallet into the following 10 tasks:
@@ -51,7 +66,7 @@ We break the journey of building the wallet into the following 10 tasks:
 # Prerequisites
 This tutorial assumes you have a working Android development setup, including a phone you can launch the app on, or a working emulator on your development machine. It also requires you have downloaded or built the bitcoindevkit library for Android ([bdk-jni](https://github.com/bitcoindevkit/bdk-jni)). To ensure you can run through this tutorial without problems, please build both branches of the [test app](https://github.com/thunderbiscuit/summer-of-bitcoin-testapp). The readme is comprehensive and should guide you through installing the proper software and testing the app and the bitcoindevkit library.
 
-# [Task 1](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.1.0): Create a basic Android activity
+# [Task 1](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task1): Create a basic Android activity
 
 <center>
   <img class="screenshot" src="./images/screenshots/task-1.png" width="300px" />
@@ -70,7 +85,7 @@ The `main` directory breaks into two major parts: the Kotlin source code files a
 ### 3. The `app/src/main/AndroidManifest.xml` file
 The Android Manifest file describes the activities that are registered for the app, the permissions that the app will requires (internet, camera, etc.), as well as some other metadata information necessary for the OS to start your application.
 
-# [Task 2](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.2.0): Build multiple activities and navigate between them
+# [Task 2](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task2): Build multiple activities and navigate between them
 You can think of _activities_ in Android as the basic building blocks for apps. They group together multiple related "screens" (called _fragments_). Activities are heavier and costlier than fragments, and most apps do not require many activities (in fact many Android applications are single-activity applications).
 
 Our wallet has 3 activities:
@@ -85,7 +100,7 @@ val intent: Intent = Intent(this, WalletActivity::class.java)
 startActivity(intent)
 ```
 
-# [Task 3](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.3.0): Add fragments to the wallet activity
+# [Task 3](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task3): Add fragments to the wallet activity
 
 <center>
   <img class="screenshot" src="./images/screenshots/task-3.gif" width="300px" />
@@ -162,7 +177,7 @@ Note that resources are accessed using the following syntax: `@resourcetype/reso
 <!-- ... -->
 ```
 
-# [Task 4](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.4.0): Build the target UI
+# [Task 4](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task4): Build the target UI
 The UI we'll be building is simple with a clean color palette. The wireframes that were used to develop the original idea were made using a tool called [Figma](https://www.figma.com/) and look like this:
 
 <center>
@@ -191,7 +206,7 @@ It is often useful to define certain properties that can be applied broadly to m
   <img class="screenshot" src="./images/screenshots/ui-screenshots.png" width="600px" />
 </center>
 
-# [Task 5](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.5.0): Add Wallet and Repository objects
+# [Task 5](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task5): Add Wallet and Repository objects
 This is where things get interesting on the bitcoin side of things. This task introduces 2 new objects: the `Wallet` object and the `Repository` object.
 
 Both are initialized on startup by the `SobiWalletApplication` class, with some properties they need to function (wallet path and shared preferences respectively).
@@ -242,7 +257,7 @@ binding.generateNewAddressButton.setOnClickListener {
 }
 ```
 
-# [Task 6](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.6.0): Implement receive and sync
+# [Task 6](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task6): Implement receive and sync
 It's now time to connect the `Wallet` object to the user interface. Note how the `generateNewAddressButton` has on `onClickListener` that triggers the `displayNewAddress()` method:
 ```kotlin
 // ReceiveFragment.kt
@@ -319,7 +334,7 @@ This ensures that the balance displayed in the `balance` view is always up to da
   <img class="screenshot" src="./images/screenshots/task-6.gif" width="300px" />
 </center>
 
-# [Task 7](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.7.0): Implement send
+# [Task 7](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task7): Implement send
 Sending bitcoin is a slightly more involved operation.
 
 The bitcoindevkit workflow for this operation is as follows:
@@ -392,7 +407,7 @@ Take a look at `utilities/Snackbars.kt` to get a sense for how they work.
   <img class="screenshot" src="./images/screenshots/task-7.gif" width="300px" />
 </center>
 
-# [Task 8](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.8.0): Add transaction history
+# [Task 8](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task8): Add transaction history
 Adding a list of transactions is a daunting task if one is to take it to a polished result. It involves using a database and keeping track on transactions, their state, and performing calculations on the raw material that the bitcoindevkit provides. This is slightly outside of the scope of this workshop. Simply displaying the list of transactions as one long string (with some small modifications), however, is quite easy, and this is what this wallet implements.
 
 Note that the `transactionsView` is simply a `NestedScrollView` that displays a string built by the `transactionsList()` method. Creating the `confirmationTime` string variable is the most involved part of this whole endeavor, and is done using a neat Kotlin feature called _extension functions_, where we define a method on the bitcoindevkit type `ConfirmationTime` which returns a nicely formatted timestamp. Take a look at the `utilities/Timestamps.kt` file for more on this function. Building the string is otherwise a rather simple affair; the bitcoindevkit returns a list of `TransactionDetails` through the `listTransactions()` method, and we parse them one by one and pull the interesting things into a string template.
@@ -428,7 +443,7 @@ private fun transactionList(): String {
   <img class="screenshot" src="./images/screenshots/transaction-history.png" width="300px" />
 </center>
 
-# [Task 9](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.9.0): Display recovery phrase
+# [Task 9](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task9): Display recovery phrase
 Displaying the recovery phrase to the user is not a complicated task. Remember that we have stored the recovery phrase in shared preferences when creating the wallet
 ```kotlin
 fun createWallet(): Unit {
@@ -464,7 +479,7 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
   <img class="screenshot" src="./images/screenshots/recovery-phrase.png" width="300px" />
 </center>
 
-# [Task 10](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/v0.10.0): Enable wallet recovery
+# [Task 10](https://github.com/thunderbiscuit/summerofbitcoin-wallet/tree/task10): Enable wallet recovery
 Enabling wallet recovery is not complicated from the bitcoindevkit point of view, but does require a bit of work on the Android side of things. Note for example that so far, the `WalletChoiceActivity` does not contain any fragments. But here we'll need to add a screen for entering the 12 word recovery phrase, and so the first thing we need to do is create a `NavHostFragment` in the `WalletChoiceActivity`, complete with 2 fragments: our original screen and a wallet recovery screen. We also need to build a `nav_wallet_choice.xml` file, for navigating between the first and second fragments.
 
 You'll note that the `fragment_recover.xml` layout file is a `ConstraintLayout` with a `NestedScrollView`, itself containing a `LinearLayout` which is the parent for all 12 `EditText` views where the user can input their mnemonic words. This allows for the list of words to be scrollable and ensures it shows well on all screen sizes.
