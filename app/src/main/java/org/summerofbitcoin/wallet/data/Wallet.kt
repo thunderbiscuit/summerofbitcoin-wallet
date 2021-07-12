@@ -97,7 +97,7 @@ object Wallet {
         return lib.restore_extended_key(Network.testnet, mnemonic, "")
     }
 
-    fun sync(max_address: Int?=null): Unit {
+    fun sync(max_address: Int=100): Unit {
         lib.sync(walletPtr, max_address)
         Log.i("SobiWallet", "Wallet successfully synced")
     }
