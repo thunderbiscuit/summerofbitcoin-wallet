@@ -2,6 +2,13 @@ package org.summerofbitcoin.wallet.utilities
 
 import android.content.SharedPreferences
 
+
+private const val PREFS_WALLET_INITIALISED = "initialized"
+private const val PREFS_PATH = "path"
+private const val PREFS_DESCRIPTOR = "descriptor"
+private const val PREFS_CHANGE_DESCRIPTOR = "changeDescriptor"
+private const val PREFS_MNEMONIC = "mnemonic"
+
 class SharedPrefManager(private val sharedPreferences: SharedPreferences) {
 
     var path: String
@@ -34,13 +41,4 @@ class SharedPrefManager(private val sharedPreferences: SharedPreferences) {
         set(value) {
             sharedPreferences.edit()?.putBoolean(PREFS_WALLET_INITIALISED, value)?.apply()
         }
-
-
-    companion object {
-        const val PREFS_WALLET_INITIALISED = "initialised"
-        const val PREFS_PATH = "path"
-        const val PREFS_DESCRIPTOR = "descriptor"
-        const val PREFS_CHANGE_DESCRIPTOR = "changeDescriptor"
-        const val PREFS_MNEMONIC = "mnemonic"
-    }
 }
