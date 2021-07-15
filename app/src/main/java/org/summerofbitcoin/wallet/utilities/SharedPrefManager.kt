@@ -37,7 +37,7 @@ class SharedPrefManager(private val sharedPreferences: SharedPreferences) {
         }
 
     var walletInitialised: Boolean
-        get() = sharedPreferences.getBoolean(PREFS_WALLET_INITIALISED, true)
+        get() = sharedPreferences.getBoolean(PREFS_WALLET_INITIALISED, false)
         set(value) {
             sharedPreferences.edit()?.putBoolean(PREFS_WALLET_INITIALISED, value)?.apply()
         }
