@@ -9,6 +9,7 @@ import android.app.Application
 import android.content.Context
 import org.summerofbitcoin.wallet.data.Repository
 import org.summerofbitcoin.wallet.data.Wallet
+import org.summerofbitcoin.wallet.utilities.SharedPrefManager
 
 class SobiWalletApplication : Application() {
     override fun onCreate() {
@@ -17,7 +18,15 @@ class SobiWalletApplication : Application() {
         // initialize Wallet object with path variable
         Wallet.setPath(applicationContext.filesDir.toString())
 
+        // initialize shared preferences manager object (singleton)
+        val sharedPrefManager =
+            SharedPrefManager(
+                applicationContext.getSharedPreferences(
+                    "org.summerofbitcoin.wallet.prefs",
+                    Context.MODE_PRIVATE
+                )
+            )
         // initialize Repository object with shared preferences
-        Repository.setSharedPreferences(applicationContext.getSharedPreferences("current_wallet", Context.MODE_PRIVATE))
+        Repository.setSharedPreferences(sharedPrefManager)
     }
 }
